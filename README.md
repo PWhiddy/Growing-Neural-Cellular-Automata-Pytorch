@@ -3,4 +3,4 @@ A reproduction of "Growing Neural Cellular Automata" https://distill.pub/2020/gr
 
 Basic growth example:
 
-[img]https://i.imgur.com/RDY4j2v.gif[/img]
+![growth](https://i.imgur.com/RDY4j2v.gif)
