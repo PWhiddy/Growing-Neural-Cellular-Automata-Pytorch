@@ -18,6 +18,9 @@ def to_rgb(x):
 
 def show_tensor(t):
     plt.imshow(to_rgb(t).cpu().detach().permute(1,2,0))
+
+def show_hidden(t, section):
+    plt.imshow(torch.clamp(t[(4+section*3):(7+section*3), :, :], 0.0, 1.0).cpu().detach().permute(1,2,0))
     
 class CAModel(nn.Module):
     
@@ -35,12 +38,12 @@ class CAModel(nn.Module):
 class CASimulator():
     
     def __init__(self):
-        self.ENV_X = 64
-        self.ENV_Y = 64
+        self.ENV_X = 48
+        self.ENV_Y = 48
         self.ENV_D = 16
         self.step_size = 1.0
         self.update_probability = 0.5
-        self.cur_batch_size = 8
+        self.cur_batch_size = 12
         self.train_steps = 8000
         self.device = torch.device('cuda')
         self.initial_state = torch.zeros(self.ENV_D, self.ENV_X, self.ENV_Y)
@@ -50,11 +53,12 @@ class CASimulator():
         self.current_states = self.current_states.to(self.device)
         self.ca_model = CAModel(self.ENV_D)
         self.ca_model = self.ca_model.to(self.device)
-        targ_img = skimage.img_as_float(io.imread('img/snake.png'))
+        targ_img = skimage.img_as_float(io.imread('img/poke/bulb.png'))
         self.target_states = torch.tensor(targ_img).float().permute(2,0,1).repeat(self.cur_batch_size,1,1,1)
         self.target_states = self.target_states.to(self.device)
-        self.optimizer = optim.Adam(self.ca_model.parameters(), lr=2e-3)#lr=2e-3)
+        self.optimizer = optim.Adam(self.ca_model.parameters(), lr=2e-3)
         self.frames_out_count = 0
+        self.losses = []
         
     def wrap_edges(self, x):
         return F.pad(x, (1,1,1,1), 'circular', 0)
@@ -96,6 +100,10 @@ class CASimulator():
             if (save_all):
                 show_tensor(self.current_states[0])
                 plt.savefig(f'output/all_figs/out{self.frames_out_count:06d}.png')
+                plt.clf()
+                show_hidden(self.current_states[0], 0)
+                plt.savefig(f'output/all_figs/out_hidden_{self.frames_out_count:06d}.png')
+                plt.clf()
                 self.frames_out_count += 1
             self.sim_step()
         loss = F.mse_loss(self.current_states[:,:4,:,:], self.target_states)
@@ -106,23 +114,30 @@ class CASimulator():
             self.ca_model.conv2.weight.grad = self.ca_model.conv2.weight.grad/(self.ca_model.conv2.weight.grad.norm()+1e-8)
             self.ca_model.conv2.bias.grad = self.ca_model.conv2.bias.grad/(self.ca_model.conv2.bias.grad.norm()+1e-8)
         self.optimizer.step()
-        print(f'loss run {run_idx} : {loss.item()}')
-        show_tensor(self.current_states[0])
-        plt.savefig(f'output/out{run_idx:03d}.png')
+        lsv = loss.item()
+        self.losses.insert(0, lsv)
+        self.losses = self.losses[:100]
+        print(f'running loss: {sum(self.losses)/len(self.losses)}')
+        print(f'loss run {run_idx} : {lsv}')
         
     def train_ca(self):
         for idx in range(self.train_steps):
-            if (idx < 2000):
+            
+            if (idx < 3000):
                 for g in self.optimizer.param_groups:
                     g['lr'] = 2e-3
-            elif (idx < 3000):
-                for g in self.optimizer.param_groups:
-                    g['lr'] = 1e-3
             else:
                 for g in self.optimizer.param_groups:
-                    g['lr'] = 2e-4
+                    g['lr'] = 4e-4
+            
             self.current_states = self.initial_state.repeat(self.cur_batch_size,1,1,1)
-            self.run_sim(random.randint(64,96), idx, idx%200 == 0)
+            self.run_sim(random.randint(64,96), idx, (idx+1)%500 == 0)
+            if (idx % 10 == 0):
+                show_tensor(self.current_states[0])
+                plt.savefig(f'output/out{idx:06d}.png')
+                plt.clf()
+            if (idx % 500 == 0):
+                torch.save(self.ca_model.state_dict(), f'checkpoints/ca_model_step_{idx:06d}.pt')
             
 if __name__ == '__main__':
     ca_sim = CASimulator()
