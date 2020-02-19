@@ -1,1 +1,1 @@
-ffmpeg -framerate 60 -i ./output/all_figs/out%06d.png -pix_fmt yuv420p movie.mp4
+ffmpeg -framerate 60 -i ./output/all_figs/out%06d.png -pix_fmt yuv420p grow.mp4
