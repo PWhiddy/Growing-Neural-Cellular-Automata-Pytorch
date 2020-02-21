@@ -26,8 +26,8 @@ class CAModel(nn.Module):
     
     def __init__(self, env_d):
         super(CAModel, self).__init__()
-        self.conv1 = nn.Conv2d(env_d*3,128,1)
-        self.conv2 = nn.Conv2d(128,env_d,1)
+        self.conv1 = nn.Conv2d(env_d*3,208,1)
+        self.conv2 = nn.Conv2d(208,env_d,1)
         nn.init.zeros_(self.conv2.weight)
         nn.init.zeros_(self.conv2.bias)
         
@@ -40,11 +40,11 @@ class CASimulator():
     def __init__(self):
         self.ENV_X = 48
         self.ENV_Y = 48
-        self.ENV_D = 16
+        self.ENV_D = 18
         self.step_size = 1.0
         self.update_probability = 0.5
-        self.cur_batch_size = 12
-        self.train_steps = 8000
+        self.cur_batch_size = 14
+        self.train_steps = 20000
         self.device = torch.device('cuda')
         self.initial_state = torch.zeros(self.ENV_D, self.ENV_X, self.ENV_Y)
         self.initial_state[3:, self.ENV_X//2, self.ENV_Y//2] = 1.0
@@ -53,9 +53,23 @@ class CASimulator():
         self.current_states = self.current_states.to(self.device)
         self.ca_model = CAModel(self.ENV_D)
         self.ca_model = self.ca_model.to(self.device)
-        targ_img = skimage.img_as_float(io.imread('img/poke/bulb.png'))
-        self.target_states = torch.tensor(targ_img).float().permute(2,0,1).repeat(self.cur_batch_size,1,1,1)
-        self.target_states = self.target_states.to(self.device)
+        image_paths = [f'img/poke/{p}.png' for p in ['mew','bulb','abra','cat','dit','weed','squirt']]
+        self.target_count = len(image_paths)
+        if (self.cur_batch_size % len(image_paths) != 0):
+            raise 'batch size must be divisible by number of image targets'
+        self.sims_per_image = self.cur_batch_size//self.target_count
+
+        first_img = skimage.img_as_float(io.imread(image_paths[0]))
+        first_tens = torch.tensor(first_img).float().permute(2,0,1).repeat(self.sims_per_image,1,1,1)
+        for im_path in image_paths[1:]:
+            next_img = skimage.img_as_float(io.imread(im_path))
+            next_tens = torch.tensor(next_img).float().permute(2,0,1).repeat(self.sims_per_image,1,1,1)
+            first_tens = torch.cat((first_tens, next_tens), 0)
+        self.target_states = first_tens.to(self.device)
+        print(self.target_states.shape)
+
+        #targ_img = skimage.img_as_float(io.imread('img/poke/bulb.png'))
+        #self.target_states = torch.tensor(targ_img).float().permute(2,0,1).repeat(self.cur_batch_size,1,1,1)
         self.optimizer = optim.Adam(self.ca_model.parameters(), lr=2e-3)
         self.frames_out_count = 0
         self.losses = []
@@ -81,7 +95,7 @@ class CASimulator():
             groups=self.ENV_D
         )
     
-    def sim_step(self):
+    def sim_step(self, ):
         pre_update_life_mask = self.living_mask()
         state_updates = self.ca_model(self.raw_senses().to(self.device))*self.step_size
         # randomly block updates to enforce
@@ -93,20 +107,26 @@ class CASimulator():
         life_mask = pre_update_life_mask & post_update_life_mask
         life_mask = life_mask.to(self.device)
         self.current_states *= life_mask.float()
-    
+        # set image target channels
+        self.current_states[:,-self.target_count:,:,:] = 0.0
+        for i in range(self.target_count):
+            self.current_states[i*self.sims_per_image:(i+1)*self.sims_per_image][:,-(i+1)] = 1.0
+
     def run_sim(self, steps, run_idx, save_all):
         self.optimizer.zero_grad()
+        dat_to_vis = random.randint(0,self.cur_batch_size-1)
         for i in range(steps):
             if (save_all):
-                show_tensor(self.current_states[0])
+                show_tensor(self.current_states[dat_to_vis])
                 plt.savefig(f'output/all_figs/out{self.frames_out_count:06d}.png')
                 plt.clf()
-                show_hidden(self.current_states[0], 0)
+                show_hidden(self.current_states[dat_to_vis], 0)
                 plt.savefig(f'output/all_figs/out_hidden_{self.frames_out_count:06d}.png')
                 plt.clf()
                 self.frames_out_count += 1
             self.sim_step()
-        loss = F.mse_loss(self.current_states[:,:4,:,:], self.target_states)
+
+        loss = F.mse_loss(self.current_states[:,:4,:,:], self.target_states )
         loss.backward()
         with torch.no_grad():
             self.ca_model.conv1.weight.grad = self.ca_model.conv1.weight.grad/(self.ca_model.conv1.weight.grad.norm()+1e-8)
@@ -123,7 +143,7 @@ class CASimulator():
     def train_ca(self):
         for idx in range(self.train_steps):
             
-            if (idx < 3000):
+            if (idx < 3500):
                 for g in self.optimizer.param_groups:
                     g['lr'] = 2e-3
             else:
@@ -133,7 +153,7 @@ class CASimulator():
             self.current_states = self.initial_state.repeat(self.cur_batch_size,1,1,1)
             self.run_sim(random.randint(64,96), idx, (idx+1)%500 == 0)
             if (idx % 10 == 0):
-                show_tensor(self.current_states[0])
+                show_tensor(self.current_states[random.randint(0,self.cur_batch_size-1)])
                 plt.savefig(f'output/out{idx:06d}.png')
                 plt.clf()
             if (idx % 500 == 0):
