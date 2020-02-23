@@ -1,4 +1,4 @@
-# Growing-Neural-Cellular-Automata-Pytorch
+# GNCA  
 
 Extended experiments of "Growing Neural Cellular Automata"
 https://distill.pub/2020/growing-ca/
