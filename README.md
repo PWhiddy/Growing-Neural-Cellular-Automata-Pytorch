@@ -5,7 +5,7 @@ https://distill.pub/2020/growing-ca/
 
 A single network trained to converge to multiple target outputs specified by control channels:  
 
-![growth](https://i.imgur.com/ks63C44.gif)
+![growth](https://i.imgur.com/vjrqwF2.gif)
 
 Basic growth example:
 
