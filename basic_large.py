@@ -33,8 +33,8 @@ class CAModel(nn.Module):
     
     def __init__(self, env_d):
         super(CAModel, self).__init__()
-        self.conv1 = nn.Conv2d(env_d*3,164,1)
-        self.conv2 = nn.Conv2d(164,env_d,1)
+        self.conv1 = nn.Conv2d(env_d*3,144,1)
+        self.conv2 = nn.Conv2d(144,env_d,1)
         nn.init.zeros_(self.conv2.weight)
         nn.init.zeros_(self.conv2.bias)
         
@@ -45,21 +45,27 @@ class CAModel(nn.Module):
 class CASimulator():
     
     def __init__(self):
-        self.ENV_X = 128
-        self.ENV_Y = 128
+        self.ENV_X = 256
+        self.ENV_Y = 256
         self.ENV_D = 16
         self.step_size = 1.0
         self.update_probability = 0.5
-        self.cur_batch_size = 4
+        self.cur_batch_size = 1
         self.train_steps = 64000
-        self.device = torch.device('cpu')
+        self.sim_min_steps = 160
+        self.sim_max_steps = 208
+        self.device = torch.device('cuda:1')
+        self.normalize_grads = True
         self.initial_state = make_initial_state(self.ENV_D, self.ENV_X, self.ENV_Y)
         self.initial_state = self.initial_state.to(self.device)
         self.current_states = self.initial_state.repeat(self.cur_batch_size,1,1,1)
         self.current_states = self.current_states.to(self.device)
         self.ca_model = CAModel(self.ENV_D)
         self.ca_model = self.ca_model.to(self.device)
-        image_paths = [f'img/{p}.png' for p in ['tree-sm']]
+        #self.ca_model = nn.DataParallel(self.ca_model)
+        self.output_path = 'output'
+        self.checkpoint_path = 'checkpoints'
+        image_paths = [f'img/{p}.png' for p in ['tree']]
         self.target_count = len(image_paths)
         if (self.cur_batch_size % len(image_paths) != 0):
             raise 'batch size must be divisible by number of image targets'
@@ -106,7 +112,7 @@ class CASimulator():
     
     def sim_step(self):
         pre_update_life_mask = self.living_mask()
-        state_updates = self.ca_model(self.raw_senses().to(self.device))*self.step_size
+        state_updates = self.ca_model(self.raw_senses())*self.step_size
         # randomly block updates to enforce
         # asynchronous communication between cells
         rand_mask = torch.rand_like(
@@ -166,10 +172,10 @@ class CASimulator():
         for i in range(steps):
             if (save_all):
                 show_tensor(self.current_states[dat_to_vis])
-                plt.savefig(f'output/all_figs/out{self.frames_out_count:06d}.png')
+                plt.savefig(f'{self.output_path}/all_figs/out{self.frames_out_count:06d}.png')
                 plt.clf()
                 show_hidden(self.current_states[dat_to_vis], 0)
-                plt.savefig(f'output/all_figs/out_hidden_{self.frames_out_count:06d}.png')
+                plt.savefig(f'{self.output_path}/all_figs/out_hidden_{self.frames_out_count:06d}.png')
                 plt.clf()
                 self.frames_out_count += 1
             self.sim_step()
@@ -177,13 +183,15 @@ class CASimulator():
 
         loss = F.mse_loss(self.current_states[:,:4,:,:], self.target_states )
         loss.backward()
-        with torch.no_grad():
-            self.ca_model.conv1.weight.grad = self.ca_model.conv1.weight.grad/(self.ca_model.conv1.weight.grad.norm()+1e-8)
-            self.ca_model.conv1.bias.grad = self.ca_model.conv1.bias.grad/(self.ca_model.conv1.bias.grad.norm()+1e-8)
-            self.ca_model.conv2.weight.grad = self.ca_model.conv2.weight.grad/(self.ca_model.conv2.weight.grad.norm()+1e-8)
-            self.ca_model.conv2.bias.grad = self.ca_model.conv2.bias.grad/(self.ca_model.conv2.bias.grad.norm()+1e-8)
+        if self.normalize_grads:
+            with torch.no_grad():
+                self.ca_model.conv1.weight.grad = self.ca_model.conv1.weight.grad/(self.ca_model.conv1.weight.grad.norm()+1e-8)
+                self.ca_model.conv1.bias.grad = self.ca_model.conv1.bias.grad/(self.ca_model.conv1.bias.grad.norm()+1e-8)
+                self.ca_model.conv2.weight.grad = self.ca_model.conv2.weight.grad/(self.ca_model.conv2.weight.grad.norm()+1e-8)
+                self.ca_model.conv2.bias.grad = self.ca_model.conv2.bias.grad/(self.ca_model.conv2.bias.grad.norm()+1e-8)
         self.optimizer.step()
         lsv = loss.item()
+        del loss
         self.losses.insert(0, lsv)
         self.losses = self.losses[:100]
         print(f'running loss: {sum(self.losses)/len(self.losses)}')
@@ -192,21 +200,30 @@ class CASimulator():
     def train_ca(self):
         for idx in range(self.train_steps):
             
-            if (idx < 10000):
+            if (idx < 5000):
                 for g in self.optimizer.param_groups:
-                    g['lr'] = 2e-3
-            else:
+                    g['lr'] = 6e-4
+            elif (idx < 15000):
                 for g in self.optimizer.param_groups:
                     g['lr'] = 3e-4
+            elif (idx < 25000):
+                for g in self.optimizer.param_groups:
+                    g['lr'] = 2e-4
+            elif (idx < 40000):
+                for g in self.optimizer.param_groups:
+                    g['lr'] = 1e-4
+            else:
+                for g in self.optimizer.param_groups:
+                    g['lr'] = 7e-6
             
             self.current_states = self.initial_state.repeat(self.cur_batch_size,1,1,1)
-            self.run_sim(random.randint(224,256), idx, (idx+1)%500 == 0)
+            self.run_sim(random.randint(self.sim_min_steps, self.sim_min_steps), idx, (idx+1)%5000 == 0)
             if (idx % 10 == 0):
                 show_tensor(self.current_states[random.randint(0,self.cur_batch_size-1)])
-                plt.savefig(f'output/out{idx:06d}.png')
+                plt.savefig(f'{self.output_path}/out{idx:06d}.png')
                 plt.clf()
-            if (idx % 500 == 0):
-                torch.save(self.ca_model.state_dict(), f'checkpoints/ca_model_step_{idx:06d}.pt')
+            if (idx % 5000 == 0):
+                torch.save(self.ca_model.state_dict(), f'{self.checkpoint_path}/ca_model_step_{idx:06d}.pt')
             
 if __name__ == '__main__':
 
@@ -222,8 +239,7 @@ if __name__ == '__main__':
 
     if args.run_pretrained:
         print('running pretained')
-        ca_sim.load_pretrained(f'checkpoints/{args.pretrained_path}.pt')
+        ca_sim.load_pretrained(f'{self.checkpoint_path}/{args.pretrained_path}.pt')
         ca_sim.run_pretrained(2000, True)
     else:
         ca_sim.train_ca()
-        
