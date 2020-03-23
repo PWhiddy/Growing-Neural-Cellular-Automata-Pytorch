@@ -67,8 +67,21 @@ def make_final_state(input_state, running_state):
     return final_state
 
 def reset_to_input(input_state, running_state):
+    # set input values
     running_state[:,0,3:3+input_state.shape[1], 3:3+input_state
                      .shape[2]] = input_state
+    '''
+    # clear input/output channel
+    running_state[:,1,:,:] = 0.0
+    # designate input area
+    running_state[:,1,
+        3:3+input_state.shape[1], 
+        3:3+input_state.shape[2]] = 1.0
+    # designate output area
+    running_state[:,1,
+        5+input_state.shape[1]:5+2*input_state.shape[1], 
+        5+input_state.shape[2]:5+2*input_state.shape[2]] = 1.0
+    '''
 
 def state_loss(running_state, final_state):
     return F.mse_loss(running_state[:,0,:,:], final_state[:,0,:,:])
