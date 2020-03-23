@@ -33,8 +33,8 @@ class CAModel(nn.Module):
     
     def __init__(self, env_d):
         super(CAModel, self).__init__()
-        self.conv1 = nn.Conv2d(env_d*3,144,1)
-        self.conv2 = nn.Conv2d(144,env_d,1)
+        self.conv1 = nn.Conv2d(env_d*3,208,1)
+        self.conv2 = nn.Conv2d(208,env_d,1)
         nn.init.zeros_(self.conv2.weight)
         nn.init.zeros_(self.conv2.bias)
         
@@ -45,16 +45,16 @@ class CAModel(nn.Module):
 class CASimulator():
     
     def __init__(self):
-        self.ENV_X = 256
-        self.ENV_Y = 256
-        self.ENV_D = 16
+        self.ENV_X = 16
+        self.ENV_Y = 16
+        self.ENV_D = 12
         self.step_size = 1.0
         self.update_probability = 0.5
-        self.cur_batch_size = 1
+        self.cur_batch_size = 3
         self.train_steps = 64000
         self.sim_min_steps = 160
         self.sim_max_steps = 208
-        self.device = torch.device('cuda:1')
+        self.device = torch.device('cuda:0')
         self.normalize_grads = True
         self.initial_state = make_initial_state(self.ENV_D, self.ENV_X, self.ENV_Y)
         self.initial_state = self.initial_state.to(self.device)
@@ -63,25 +63,8 @@ class CASimulator():
         self.ca_model = CAModel(self.ENV_D)
         self.ca_model = self.ca_model.to(self.device)
         #self.ca_model = nn.DataParallel(self.ca_model)
-        self.output_path = 'output'
-        self.checkpoint_path = 'checkpoints'
-        image_paths = [f'img/{p}.png' for p in ['tree']]
-        self.target_count = len(image_paths)
-        if (self.cur_batch_size % len(image_paths) != 0):
-            raise 'batch size must be divisible by number of image targets'
-        self.sims_per_image = self.cur_batch_size//self.target_count
-
-        first_img = skimage.img_as_float(io.imread(image_paths[0]))
-        first_tens = torch.tensor(first_img).float().permute(2,0,1).repeat(self.sims_per_image,1,1,1)
-        for im_path in image_paths[1:]:
-            next_img = skimage.img_as_float(io.imread(im_path))
-            next_tens = torch.tensor(next_img).float().permute(2,0,1).repeat(self.sims_per_image,1,1,1)
-            first_tens = torch.cat((first_tens, next_tens), 0)
-        self.target_states = first_tens.to(self.device)
-        print(self.target_states.shape)
-
-        #targ_img = skimage.img_as_float(io.imread('img/poke/bulb.png'))
-        #self.target_states = torch.tensor(targ_img).float().permute(2,0,1).repeat(self.cur_batch_size,1,1,1)
+        self.output_path = 'testout'
+        self.checkpoint_path = 'testcheck'
         self.optimizer = optim.Adam(self.ca_model.parameters(), lr=2e-3)
         self.frames_out_count = 0
         self.losses = []
@@ -111,17 +94,17 @@ class CASimulator():
         )
     
     def sim_step(self):
-        pre_update_life_mask = self.living_mask()
+        #pre_update_life_mask = self.living_mask()
         state_updates = self.ca_model(self.raw_senses())*self.step_size
         # randomly block updates to enforce
         # asynchronous communication between cells
         rand_mask = torch.rand_like(
             self.current_states[:, :1, :, :]) < self.update_probability
         self.current_states += state_updates*(rand_mask.float().to(self.device))
-        post_update_life_mask = self.living_mask()
-        life_mask = pre_update_life_mask & post_update_life_mask
-        life_mask = life_mask.to(self.device)
-        self.current_states *= life_mask.float()
+        #post_update_life_mask = self.living_mask()
+        #life_mask = pre_update_life_mask & post_update_life_mask
+        #life_mask = life_mask.to(self.device)
+        #self.current_states *= life_mask.float()
 
     def set_experiment_control_channel(self, s_index):
         # set image target channels
@@ -200,29 +183,20 @@ class CASimulator():
     def train_ca(self):
         for idx in range(self.train_steps):
             
-            if (idx < 5000):
+            if (idx < 10000):
                 for g in self.optimizer.param_groups:
-                    g['lr'] = 6e-4
-            elif (idx < 15000):
-                for g in self.optimizer.param_groups:
-                    g['lr'] = 3e-4
-            elif (idx < 25000):
-                for g in self.optimizer.param_groups:
-                    g['lr'] = 2e-4
-            elif (idx < 40000):
-                for g in self.optimizer.param_groups:
-                    g['lr'] = 1e-4
+                    g['lr'] = 1e-3
             else:
                 for g in self.optimizer.param_groups:
-                    g['lr'] = 7e-6
+                    g['lr'] = 2e-4
             
             self.current_states = self.initial_state.repeat(self.cur_batch_size,1,1,1)
-            self.run_sim(random.randint(self.sim_min_steps, self.sim_min_steps), idx, (idx+1)%5000 == 0)
+            self.run_sim(random.randint(self.sim_min_steps, self.sim_min_steps), idx, (idx+1)%500 == 0)
             if (idx % 10 == 0):
                 show_tensor(self.current_states[random.randint(0,self.cur_batch_size-1)])
                 plt.savefig(f'{self.output_path}/out{idx:06d}.png')
                 plt.clf()
-            if (idx % 5000 == 0):
+            if (idx % 500 == 0):
                 torch.save(self.ca_model.state_dict(), f'{self.checkpoint_path}/ca_model_step_{idx:06d}.pt')
             
 if __name__ == '__main__':
