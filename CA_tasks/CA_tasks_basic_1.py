@@ -48,13 +48,29 @@ def show_hidden(t, section):
             axe.axis('off')
             axe.imshow(torch.sigmoid(batch_item[1:4,:,:]).cpu().detach().permute(1,2,0), interpolation='nearest')
 
+def show_all_layers(t):
+    plt.set_cmap('inferno')
+    fig, axs = plt.subplots(4,1, figsize=(16, 16))
+    plt.subplots_adjust(hspace =0.01, wspace=0.1)
+    axs[0].axis('off')
+    axs[0].imshow(to_rgb(t[0]).cpu().detach(), interpolation='nearest')
+    axs[1].axis('off')
+    axs[1].imshow(torch.sigmoid(t[0,1:4,:,:]).cpu().detach().permute(1,2,0), interpolation='nearest')
+    axs[2].axis('off')
+    axs[2].imshow(torch.sigmoid(t[0,4:7,:,:]).cpu().detach().permute(1,2,0), interpolation='nearest')
+    axs[3].axis('off')
+    axs[3].imshow(torch.sigmoid(t[0,7:10,:,:]).cpu().detach().permute(1,2,0), interpolation='nearest')
+
 def make_initial_state(batch_size,d,x,y):
     i_state = torch.zeros(batch_size, d,x,y)
     i_state[:, 1:, x//2, y//2] = 1.0
     return i_state
 
 def make_input(batch_size,x,y):
-    return torch.rand(batch_size,x,y)
+    inp = 0.5*torch.rand(batch_size,x,y)
+    for batch_item in inp:
+        batch_item += torch.rand(1)*0.5
+    return inp
 
 def make_final_state(input_state, running_state):
     final_state = running_state.clone()
@@ -71,6 +87,10 @@ def reset_to_input(input_state, running_state):
     running_state[:,0,3:3+input_state.shape[1], 3:3+input_state
                      .shape[2]] = input_state
     '''
+    this breaks it!
+    seems that the initial task of learning box shape
+    actually allows it to then solve the more difficult problem
+    of transfering information!
     # clear input/output channel
     running_state[:,1,:,:] = 0.0
     # designate input area
@@ -90,8 +110,8 @@ class CAModel(nn.Module):
     
     def __init__(self, env_d):
         super(CAModel, self).__init__()
-        self.conv1 = nn.Conv2d(env_d*3,192,1)
-        self.conv2 = nn.Conv2d(192,env_d,1)
+        self.conv1 = nn.Conv2d(env_d*3,224,1)
+        self.conv2 = nn.Conv2d(224,env_d,1)
         nn.init.zeros_(self.conv2.weight)
         nn.init.zeros_(self.conv2.bias)
         
@@ -102,17 +122,17 @@ class CAModel(nn.Module):
 class CASimulator():
     
     def __init__(self):
-        self.ENV_X = 16
-        self.ENV_Y = 16
-        self.ENV_D = 8
-        self.input_x = 4
-        self.input_y = 4
+        self.ENV_X = 24
+        self.ENV_Y = 24
+        self.ENV_D = 10
+        self.input_x = 8
+        self.input_y = 8
         self.step_size = 1.0
         self.update_probability = 0.5
         self.cur_batch_size = 32
         self.train_steps = 64000
-        self.min_sim_steps = 64
-        self.max_sim_steps = 96
+        self.min_sim_steps = 96
+        self.max_sim_steps = 128
         self.device = torch.device('cuda')
         self.ca_model = CAModel(self.ENV_D)
         self.ca_model = self.ca_model.to(self.device)
@@ -200,7 +220,7 @@ class CASimulator():
                 show_tensor_surfaces(self.current_states)
                 plt.savefig(f'output/all_figs/out{self.frames_out_count:06d}.png')
                 plt.close('all')
-                show_hidden(self.current_states, 0)
+                show_all_layers(self.current_states)
                 plt.savefig(f'output/all_figs/out_hidden_{self.frames_out_count:06d}.png')
                 plt.close('all')
                 self.frames_out_count += 1
@@ -224,12 +244,12 @@ class CASimulator():
     def train_ca(self):
         for idx in range(self.train_steps):
             
-            if (idx < 25000):
+            if (idx < 4000):
                 for g in self.optimizer.param_groups:
                     g['lr'] = 2e-3
             else:
                 for g in self.optimizer.param_groups:
-                    g['lr'] = 4e-4
+                    g['lr'] = 2e-4
             
             #self.current_states = self.initial_state.repeat(self.cur_batch_size,1,1,1)
             self.current_states = make_initial_state(self.cur_batch_size, self.ENV_D, self.ENV_X, self.ENV_Y).to(self.device)
@@ -261,5 +281,6 @@ if __name__ == '__main__':
         ca_sim.load_pretrained(f'checkpoints/{args.pretrained_path}.pt')
         ca_sim.run_pretrained(2000, True)
     else:
+        #ca_sim.load_pretrained(f'checkpoints/ca_model_start.pt')
         ca_sim.train_ca()
         
