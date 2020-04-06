@@ -2,7 +2,7 @@
 
 Based on the original work [Growing Neural Cellular Automata](https://distill.pub/2020/growing-ca/) by Alexander Mordvintsev et al.  
   
-The writing on this page is adapted from posts and discussion in the distill slack group.  
+The writing on this page is adapted from posts and discussion in the distill community slack group.  
 
 ### Fun Pictures:
 A single network trained to converge to multiple target outputs specified by control channels:  
