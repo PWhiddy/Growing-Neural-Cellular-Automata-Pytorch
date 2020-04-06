@@ -15,7 +15,7 @@ random.seed(2574)
 
 def to_rgb(x):
     rgb = x[0,:,:]
-    return torch.clamp(rgb, 0.0, 1.0)
+    return torch.clamp(rgb*0.15, 0.0, 1.0)
 
 def show_tensor(t):
     plt.axis('off')
@@ -26,15 +26,15 @@ def show_tensor_surfaces(t):
     if (len(t.shape) < 4):
         plt.axis('off')
         plt.set_cmap('inferno')
-        plt.imshow(to_rgb(t).cpu().detach(), interpolation='nearest')
+        plt.imshow(to_rgb(0.9*t).cpu().detach(), interpolation='nearest')
     else:
         # batch must be multiple of 2
         plt.set_cmap('inferno')
-        fig, axs = plt.subplots(4,t.shape[0]//4, figsize=(16, 16))
-        plt.subplots_adjust(hspace =0.01, wspace=0.1)
+        fig, axs = plt.subplots(4,t.shape[0]//4, figsize=(8, 16))
+        plt.subplots_adjust(hspace =0.02, wspace=0.02)
         for axe,batch_item in zip(axs.flatten(),t):
             axe.axis('off')
-            axe.imshow(to_rgb(batch_item).cpu().detach(), interpolation='nearest')
+            axe.imshow(to_rgb(0.9*batch_item).cpu().detach(), interpolation='nearest')
 
 def show_hidden(t, section):
     if (len(t.shape) < 4):
@@ -56,7 +56,8 @@ def convert_image(t,section):
 
 def show_all_layers(t,o):
     plt.set_cmap('inferno')
-    fig, axs = plt.subplots(4,2, figsize=(16, 16))
+    fig, axs = plt.subplots(8,2, figsize=(8, 32))
+    plt.subplots_adjust(hspace =0.02, wspace=0.02)
 
     axs[0,0].axis('off')
     axs[0,0].imshow(convert_image(t, 0), interpolation='nearest')
@@ -74,10 +75,30 @@ def show_all_layers(t,o):
         axs[2,1].imshow(to_rgb(o[0]).cpu().detach(), interpolation='nearest')
     axs[3,0].axis('off')
     axs[3,1].axis('off')
-    if (t.shape[1] > 7):
+    if (t.shape[1] > 10):
         axs[3,0].imshow(convert_image(t, 3), interpolation='nearest')
         axs[3,1].imshow(to_rgb(o[0]).cpu().detach(), interpolation='nearest')
-    plt.subplots_adjust(left=0.0, right = 1.0, hspace =0.02, wspace=0.02)
+
+    axs[4,0].axis('off')
+    axs[4,1].axis('off')
+    if (t.shape[1] > 13):
+        axs[4,0].imshow(convert_image(t, 4), interpolation='nearest')
+        axs[4,1].imshow(to_rgb(o[0]).cpu().detach(), interpolation='nearest')
+    axs[5,0].axis('off')
+    axs[5,1].axis('off')
+    if (t.shape[1] > 16):
+        axs[5,0].imshow(convert_image(t, 5), interpolation='nearest')
+        axs[5,1].imshow(to_rgb(o[0]).cpu().detach(), interpolation='nearest')
+    axs[6,0].axis('off')
+    axs[6,1].axis('off')
+    if (t.shape[1] > 19):
+        axs[6,0].imshow(convert_image(t, 6), interpolation='nearest')
+        axs[6,1].imshow(to_rgb(o[0]).cpu().detach(), interpolation='nearest')
+    axs[7,0].axis('off')
+    axs[7,1].axis('off')
+    if (t.shape[1] > 21):
+        axs[7,0].imshow(convert_image(t, 7), interpolation='nearest')
+        axs[7,1].imshow(to_rgb(o[0]).cpu().detach(), interpolation='nearest')
 
 def make_initial_state(batch_size,d,x,y):
     i_state = torch.zeros(batch_size, d,x,y)
@@ -91,7 +112,7 @@ def make_input_fractal(batch_size, x, y):
         smp = OpenSimplex(random.randint(0,1e10))
         for lvl in range(8):
             amp = 0.5**lvl
-            freq = 0.02*2**lvl
+            freq = 0.04*2**lvl
             for a in range(x):
                 for b in range(y):
                     val[a][b] += amp*smp.noise2d(x=freq*a, y=freq*b)
@@ -107,20 +128,34 @@ def make_input(batch_size,x,y):
         batch_item += torch.rand(1)*0.5
     return inp
 
-def make_final_state(input_state, running_state):
+def make_final_state(input_state_A, input_state_B, running_state):
     final_state = running_state.clone()
     final_state[:,0,
-        3:3+input_state.shape[1], 
-        3:3+input_state.shape[2]] = input_state
+        2:2+input_state_A.shape[1], 
+        26:26+input_state_A.shape[2]] = input_state_B
     final_state[:,0,
-        5+input_state.shape[1]:5+2*input_state.shape[1], 
-        5+input_state.shape[2]:5+2*input_state.shape[2]] = input_state #torch.flip(input_state, [0,1])
+        26:26+input_state_B.shape[1], 
+        2:2+input_state_B.shape[2]] = input_state_A #torch.flip(input_state, [0,1])
+    input_mult = torch.matmul(input_state_A, input_state_B)
+    final_state[:,0,
+        26:26+input_mult.shape[1], 
+        26:26+input_mult.shape[2]] = input_mult
     return final_state
 
-def reset_to_input(input_state, running_state):
+def reset_to_input(input_state_A, input_state_B, running_state):
     # set input values
-    running_state[:,0,3:3+input_state.shape[1], 3:3+input_state
-                     .shape[2]] = input_state
+    running_state[:,0,
+        2:2+input_state_A.shape[1], 
+        26:26+input_state_A.shape[2]] = input_state_B
+    running_state[:,0,
+        26:26+input_state_B.shape[1], 
+        2:2+input_state_B.shape[2]] = input_state_A
+
+def show_final_target(input_state_A, input_state_B, running_state):
+    input_mult = torch.matmul(input_state_A, input_state_B)
+    running_state[:,0,
+        2:2+input_mult.shape[1], 
+        2:2+input_mult.shape[2]] = input_mult
     
     '''
     # this breaks it!
@@ -158,17 +193,17 @@ class CAModel(nn.Module):
 class CASimulator():
     
     def __init__(self):
-        self.ENV_X = 35
-        self.ENV_Y = 35
-        self.ENV_D = 13
-        self.input_x = 13
-        self.input_y = 13
+        self.ENV_X = 50
+        self.ENV_Y = 50
+        self.ENV_D = 25
+        self.input_x = 22
+        self.input_y = 22
         self.step_size = 1.0
         self.update_probability = 0.5
-        self.cur_batch_size = 24
+        self.cur_batch_size = 8
         self.train_steps = 64000
-        self.min_sim_steps = 64
-        self.max_sim_steps = 96
+        self.min_sim_steps = 96#48
+        self.max_sim_steps = 128#64
         self.device = torch.device('cuda')
         self.ca_model = CAModel(self.ENV_D)
         self.ca_model = self.ca_model.to(self.device)
@@ -178,14 +213,14 @@ class CASimulator():
         self.losses = []
         self.checkpoint_interval = 500
         self.final_plot_interval = 10
-        self.evolution_interval = 5
-        self.lr_schedule = lambda x: 2e-4*2.0**(-0.005*x) #lambda x: 2e-3 if x<4000 else 3e-4
+        self.evolution_interval = 500
+        self.lr_schedule = lambda x: 2e-3*2.0**(-0.0002*x) #lambda x: 2e-3 if x<4000 else 3e-4
 
     def load_pretrained(self, path):
         self.ca_model.load_state_dict(torch.load(path))
         
     def wrap_edges(self, x):
-        return F.pad(x, (1,1,1,1), 'circular', 0)
+        return F.pad(x, (1,1,1,1), 'constant', 0.0) #'circular', 0)
         
     def raw_senses(self):
         # state - (batch, depth, x, y)
@@ -255,7 +290,7 @@ class CASimulator():
     def run_sim(self, steps, run_idx, save_all):
         self.optimizer.zero_grad()
         for i in range(steps):
-            reset_to_input(self.input_mats, self.current_states)
+            reset_to_input(self.input_matsA, self.input_matsB, self.current_states)
             if (save_all):
                 show_all_layers(self.current_states-self.prev_states, self.current_states)
                 plt.savefig(f'output/all_figs/out_hidden_{self.frames_out_count:06d}.png')
@@ -267,17 +302,38 @@ class CASimulator():
 
         loss = state_loss(self.current_states, self.final_state)
         loss.backward()
+        
+        '''
         with torch.no_grad():
             self.ca_model.conv1.weight.grad = self.ca_model.conv1.weight.grad/(self.ca_model.conv1.weight.grad.norm()+1e-8)
             self.ca_model.conv1.bias.grad = self.ca_model.conv1.bias.grad/(self.ca_model.conv1.bias.grad.norm()+1e-8)
             self.ca_model.conv2.weight.grad = self.ca_model.conv2.weight.grad/(self.ca_model.conv2.weight.grad.norm()+1e-8)
             self.ca_model.conv2.bias.grad = self.ca_model.conv2.bias.grad/(self.ca_model.conv2.bias.grad.norm()+1e-8)
+        '''
+
         self.optimizer.step()
         lsv = loss.item()
         self.losses.insert(0, lsv)
         self.losses = self.losses[:100]
         print(f'running loss: {sum(self.losses)/len(self.losses)}')
         print(f'loss run {run_idx} : {lsv}')
+        print(f'lr: {self.lr_schedule(run_idx)}')
+
+
+    def initialize_states(self):
+        self.current_states = make_initial_state(self.cur_batch_size, self.ENV_D, self.ENV_X, self.ENV_Y).to(self.device)
+        self.input_matsA = make_input_fractal(self.cur_batch_size, self.input_x, self.input_y).to(self.device)
+        self.input_matsB = make_input_fractal(self.cur_batch_size, self.input_x, self.input_y).to(self.device)
+        self.final_state = make_final_state(self.input_matsA, self.input_matsB, self.current_states).to(self.device)
+        self.prev_states = self.current_states.clone()
+
+
+    def initialize_blank(self):
+        self.current_states = make_initial_state(self.cur_batch_size, self.ENV_D, self.ENV_X, self.ENV_Y).to(self.device)
+        self.input_matsA = torch.zeros(self.cur_batch_size,self.input_x,self.input_y).to(self.device)
+        self.input_matsB = torch.zeros(self.cur_batch_size,self.input_x,self.input_y).to(self.device)
+        self.final_state = make_final_state(self.input_matsA, self.input_matsB, self.current_states).to(self.device)
+        self.prev_states = self.current_states.clone()
         
     def train_ca(self):
         for idx in range(self.train_steps):
@@ -287,11 +343,13 @@ class CASimulator():
             
             #self.current_states = self.initial_state.repeat(self.cur_batch_size,1,1,1)
             self.current_states = make_initial_state(self.cur_batch_size, self.ENV_D, self.ENV_X, self.ENV_Y).to(self.device)
-            self.input_mats = make_input_fractal(self.cur_batch_size, self.input_x, self.input_y).to(self.device)
-            self.final_state = make_final_state(self.input_mats, self.current_states).to(self.device)
+            self.input_matsA = make_input_fractal(self.cur_batch_size, self.input_x, self.input_y).to(self.device)
+            self.input_matsB = make_input_fractal(self.cur_batch_size, self.input_x, self.input_y).to(self.device)
+            self.final_state = make_final_state(self.input_matsA, self.input_matsB, self.current_states).to(self.device)
             self.prev_states = self.current_states.clone()
             self.run_sim(random.randint(self.min_sim_steps,self.max_sim_steps), idx, (idx+1)%self.evolution_interval == 0)
             if (idx % self.final_plot_interval == 0):
+                show_final_target(self.input_matsA, self.input_matsB, self.current_states)
                 show_tensor_surfaces(self.current_states)
                 plt.savefig(f'output/out{idx:06d}.png')
                 plt.close('all')
@@ -315,6 +373,6 @@ if __name__ == '__main__':
         ca_sim.load_pretrained(f'checkpoints/{args.pretrained_path}.pt')
         ca_sim.run_pretrained(2000, True)
     else:
-        ca_sim.load_pretrained(f'checkpoints/ca_model_goodly.pt')
+        #ca_sim.load_pretrained(f'checkpoints/ca_model_mult_constant_pad.pt')
         ca_sim.train_ca()
         
