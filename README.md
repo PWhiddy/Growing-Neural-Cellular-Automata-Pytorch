@@ -5,8 +5,8 @@ Based on the original work (Growing Neural Cellular Automata)[https://distill.pu
 The writing on this page is adapted from posts and discussion in the distill slack group.  
 
 ### Fun Pictures:
-A single network trained to converge to multiple target outputs specified by control channels [source](basic_large.py):  
-  
+A single network trained to converge to multiple target outputs specified by control channels   
+[source](basic_large.py):  
 ![growth](https://i.imgur.com/vjrqwF2.gif)
   
 ### Visualizing hidden states:    
@@ -21,7 +21,6 @@ To clarify - the model is not trained to copy any particular matrices. Every run
   
 ### Copying a matrix from one location to another:  
 [source](CA_tasks/CA_tasks_copy_1.py)  
-  
 ![copy](https://i.imgur.com/oHirFid.gif)
 
 ### Matrix Multiplication
@@ -35,7 +34,6 @@ The next experiment is trying to capture the movement of information through the
 
 ### Matrix Multiplication Visualization:  
 [source](CA_tasks/CA_tasks_matmul.py)  
-  
 ![matmul](https://i.imgur.com/3CD5IX7.gif)  
   
 ### Principal components of hidden channels:
