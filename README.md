@@ -1,6 +1,6 @@
 # Growing Neural Cellular Automata - Task Experiments  
 
-Based on the original work (Growing Neural Cellular Automata)[https://distill.pub/2020/growing-ca/] by Alexander Mordvintsev et al.  
+Based on the original work [Growing Neural Cellular Automata](https://distill.pub/2020/growing-ca/) by Alexander Mordvintsev et al.  
   
 The writing on this page is adapted from posts and discussion in the distill slack group.  
 
@@ -13,7 +13,7 @@ A single network trained to converge to multiple target outputs specified by con
   
 ![hidden](https://i.imgur.com/2ApfNM3.gif)  
 
-### Computational Tasks  
+## Computational Tasks  
   
 It is an open question what kind of computational tasks these systems can be optimized to perform. A simple building block for more complex problems, is copying a random input matrix from one location to another. From a high level this might seem like a trivial task. If you were building a physical circuit it would be as simple as connecting all the inputs directly to the outputs with wires. However, given the constraints that this is a homogeneous computational medium, communication is only allowed between immediate neighbors, and there is a 50% chance of failure every time you try to post a message, it's actually not so straightforward.
 With some patience it is possible for the CA to learn this with 4x4 and 8x8 matrices! It was easier to make 4x4 work than 8x8, larger that 12x12 have not been tried for this experiment yet. It seems this system must need to execute some kind of bucket brigade algorithm in order to move the input data to the output. When visualizing the hidden states at high framerate, you can actually see the elements of the input matrix being consumed and streaming across the grid.
@@ -39,3 +39,4 @@ The next experiment is trying to capture the movement of information through the
 ### Principal components of hidden channels:
 ![matmul_pca](https://i.imgur.com/o9U0IWY.gif)  
   
+To be continued...
