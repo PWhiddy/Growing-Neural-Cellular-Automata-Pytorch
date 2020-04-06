@@ -8,7 +8,7 @@ A single network trained to converge to multiple target outputs specified by con
 ![growth](https://i.imgur.com/vjrqwF2.gif)
   
 Visualizing hidden states:  
-![hidden](https://i.imgur.com/QeuJ6hR.gif)  
+![hidden](https://i.imgur.com/2ApfNM3.gif)  
   
 Copying a matrix from one location to another [link](CA_tasks/CA_tasks_copy_1.py):
 
@@ -16,11 +16,11 @@ Copying a matrix from one location to another [link](CA_tasks/CA_tasks_copy_1.py
 
 Matrix Multiplication [link](CA_tasks/CA_tasks_matmul.py):
 
-![matmul](https://i.imgur.com/4LXScIb.gifv)
+![matmul](https://i.imgur.com/4LXScIb.gif)
 
 Principal components of hidden channels:
 
-![matmul_pca](https://i.imgur.com/1ZIXBF1.gifv)
+![matmul_pca](https://i.imgur.com/1ZIXBF1.gif)
 
 Basic growth example:
 
