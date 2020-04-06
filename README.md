@@ -30,7 +30,7 @@ Here are some results. The lower left and upper right are the input matrices, wh
 
 <img src="https://i.imgur.com/dd9BVEq.png" width="400" height="800">
 
-The way the CA implements this algorithm is similar to the systolic arrays in a TPU's matrix multiplication unit [Analysis of matrix multiplication in TPUs](https://medium.com/@CPLu/should-we-all-embrace-systolic-array-df3830f193dc). This seems natural, as both are grids of homogeneous units which communicate through their neighbors.
+The way the CA implements this algorithm is similar to the [systolic arrays](https://en.wikipedia.org/wiki/Systolic_array) in a [TPU's matrix multiplication unit](https://medium.com/@CPLu/should-we-all-embrace-systolic-array-df3830f193dc). This seems natural, as both are grids of homogeneous units which communicate through their neighbors.
 The next experiment is trying to capture the movement of information through the system. Here is one attempt, visualizing the 24 hidden channels (as 8 rgb images) side by side with the output channel. To track motion, I've found its better to visualize the change (residual) of the cells at each step. Due to the stochastic updating however these changes are very noisy and brief. To make patterns over time easier to see, the change is measured from an exponential moving average rather than just the state from the previous step. This creates "tracers" for each cell update. Some channels seem to exhibit mostly downward or rightward motion, and some are more of a mixture. The final result can clearly be seen filling in diagonally from the upper left corner of the output, similar as would be expected of a systolic array. Some of the most interesting patterns are grid like structures which fill the input matrices space near the near of the simulation. The reason for this is unknown at this time. The initial wave propagating up to the right from the center is an artifact of pretraining while allowing wrapping around the edges, which was later disabled. 
 
 ### Matrix Multiplication Visualization:  
@@ -38,7 +38,6 @@ The next experiment is trying to capture the movement of information through the
   
 ![matmul](https://i.imgur.com/3CD5IX7.gif)  
   
-### Principal components of hidden channels:  
-  
+### Principal components of hidden channels:
 ![matmul_pca](https://i.imgur.com/o9U0IWY.gif)  
   
