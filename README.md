@@ -4,7 +4,7 @@ Based on the original work (Growing Neural Cellular Automata)[https://distill.pu
   
 The writing on this page is adapted from posts and discussion in the distill slack group.  
 
-### Fun Pictures
+### Fun Pictures:
 A single network trained to converge to multiple target outputs specified by control channels [source](basic_large.py):  
   
 ![growth](https://i.imgur.com/vjrqwF2.gif)
