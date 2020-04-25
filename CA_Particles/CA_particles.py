@@ -100,53 +100,6 @@ def show_all_layers(t,o):
         axs[7,0].imshow(convert_image(t, 7), interpolation='nearest')
         axs[7,1].imshow(to_rgb(o[0]).cpu().detach(), interpolation='nearest')
 
-def make_initial_state(batch_size,d,x,y):
-    i_state = torch.zeros(batch_size, d,x,y)
-    i_state[:, 1:, x//2-2, y//2-2] = 1.0
-    return i_state
-
-def make_input(batch_size,x,y):
-    inp = 0.5*torch.rand(batch_size,x,y)
-    for batch_item in inp:
-        batch_item += torch.rand(1)*0.5
-    return inp
-
-def make_final_state(input_state_A, input_state_B, running_state):
-    final_state = running_state.clone()
-    final_state[:,0,
-        2:2+input_state_A.shape[1], 
-        26:26+input_state_A.shape[2]] = input_state_B
-    final_state[:,0,
-        26:26+input_state_B.shape[1], 
-        2:2+input_state_B.shape[2]] = input_state_A #torch.flip(input_state, [0,1])
-    input_mult = torch.matmul(input_state_A, input_state_B)
-    final_state[:,0,
-        26:26+input_mult.shape[1], 
-        26:26+input_mult.shape[2]] = input_mult
-    return final_state
-
-def show_final_target(input_state_A, input_state_B, running_state):
-    input_mult = torch.matmul(input_state_A, input_state_B)
-    running_state[:,0,
-        2:2+input_mult.shape[1], 
-        2:2+input_mult.shape[2]] = input_mult
-    
-    '''
-    # this breaks it!
-    # seems that the initial task of learning box shape
-    # actually allows it to then solve the more difficult problem
-    # of transfering information!
-    # clear input/output channel
-    running_state[:,1,:,:] = 0.0
-    # designate input area
-    running_state[:,1,
-        3:3+input_state.shape[1], 
-        3:3+input_state.shape[2]] = -1.0
-    # designate output area
-    running_state[:,1,
-        5+input_state.shape[1]:5+2*input_state.shape[1], 
-        5+input_state.shape[2]:5+2*input_state.shape[2]] = 1.0
-    '''
 
 def state_loss(running_state, final_state):
     return F.mse_loss(running_state[:,0:3,:,:], final_state[:,0:3,:,:])
