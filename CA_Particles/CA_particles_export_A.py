@@ -6,8 +6,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import skimage
 from skimage import io
-import onnx
-from onnx_tf.backend import prepare
 import random
 import json
 import base64
@@ -66,9 +64,7 @@ class CAModel(nn.Module):
         nn.init.zeros_(self.conv2.bias)
         
     def forward(self, x):
-        #raw_in = x.clone()
         x = F.relu(self.conv1(x))
-        #x = torch.cat((x, raw_in), dim=1)
         return self.conv2(x)
     
 class CASimulator():
@@ -117,7 +113,7 @@ class CASimulator():
 
     def draw_states(self):
         blank = torch.zeros(self.cur_batch_size, self.ENV_D, self.ENV_X, self.ENV_Y)
-        #blank[:,0:3,:,:] = torch.tensor([ps.draw() for ps in self.p_sims]).permute(0,3,1,2)
+        blank[:,0:3,:,:] = torch.tensor([ps.draw() for ps in self.p_sims]).permute(0,3,1,2)
         return blank
 
     def run_particles(self, num_steps):
@@ -248,26 +244,21 @@ def pack_layer(weight, bias, outputType=np.uint8):
           'weight_scale': weight_scale, 'bias_scale': bias_scale,
           'type': outputType.__name__}
 
-def export_ca_to_webgl_demo(ca, outputType=np.uint8):
+  # original version
+def export_pytorch_ca_to_webgl_demo(ca, outputType=np.uint8):
   # reorder the first layer inputs to meet webgl demo perception layout
-  chn = ca.channel_n
-  w1 = ca.weights[0][0, 0].numpy()
+  chn = ca.ENV_D
+  ca = ca.ca_model
+  w1 = ca.conv1.weight.squeeze().cpu().detach().permute(1,0).numpy() #ca.weights[0][0, 0].numpy()
   w1 = w1.reshape(chn, 3, -1).transpose(1, 0, 2).reshape(3*chn, -1)
+  print(f'w1 shape: {w1.shape}')
+
   layers = [
-      pack_layer(w1, ca.weights[1].numpy(), outputType),
-      pack_layer(ca.weights[2][0, 0].numpy(), ca.weights[3].numpy(), outputType)
+      pack_layer(w1, ca.conv1.bias.cpu().detach().numpy(), outputType),
+      pack_layer(ca.conv2.weight.squeeze().cpu().detach().permute(1,0).numpy(), ca.conv2.bias.cpu().detach().numpy(), outputType)
   ]
   return json.dumps(layers)
-
-def export_to_onnx(ca_sim):
-    dummy_input = torch.randn(4, ca_sim.ENV_D*3, 96, 96, device='cuda')
-    torch.onnx.export(ca_sim.ca_model, dummy_input, 'exports/ca_model.onnx', verbose=True)
-
-def read_onnx_to_tf():
-    onnx_mod = onnx.load('exports/ca_model.onnx')
-    print('loaded onnx model')
-    tf_mod = prepare(onnx_mod)
-    return tf_mod
+            
 
 if __name__ == '__main__':
 
@@ -287,8 +278,8 @@ if __name__ == '__main__':
         print('running pretained')
         ca_sim.load_pretrained(f'checkpoints/{args.pretrained_path}.pt')
         if args.export:
-            with open('part_weights.json', 'w') as f:
-                print(export_ca_to_webgl_demo(ca_sim), file=f)
+            with open('../../post--growing-ca/public/webgl_models8/part_weights.json', 'w') as f:
+                print(export_pytorch_ca_to_webgl_demo(ca_sim), file=f)
         else:
             ca_sim.run_pretrained(50000)
     else:

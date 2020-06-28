@@ -1,3 +1,4 @@
+import matplotlib
 import matplotlib.pyplot as plt
 import numpy.random as rnd
 import numpy as np
@@ -6,6 +7,9 @@ import cv2
 from matplotlib.patches import Ellipse
 import itertools
 import math
+# this backend is faster!
+matplotlib.use('Qt5Agg')
+# options on windows ['GTK3Agg', 'GTK3Cairo', 'MacOSX', 'nbAgg', 'Qt4Agg', 'Qt4Cairo', 'Qt5Agg', 'Qt5Cairo', 'TkAgg', 'TkCairo', 'WebAgg', 'WX', 'WXAgg', 'WXCairo', 'agg', 'cairo', 'pdf', 'pgf', 'ps', 'svg', 'template']
 
 class Particle:
     
@@ -17,10 +21,9 @@ class Particle:
     def update(self):
         self.xy += self.vel
 
-
 class ParticleSystem:
     
-    def __init__(self, start_count, env_size, part_size, rep_strength, init_p_dim):
+    def __init__(self, start_count, env_size, part_size, rep_strength, init_p_dim, p_spacing, fig_i):
         self.parts = []
         self.part_size = part_size
         self.repel_strength = rep_strength
@@ -31,17 +34,38 @@ class ParticleSystem:
         self.sim_step = 0
         self.draw_step = 0
         self.init_part_dim = init_p_dim
+        self.part_spacing = p_spacing
         self.init_parts(start_count)
+        self.fig = plt.figure(fig_i)
+        self.DPI = self.fig.get_dpi()
+        self.fig.set_size_inches(self.upper_bound_x/float(self.DPI),self.upper_bound_y/float(self.DPI))
+        self.ax = self.fig.add_subplot(111, aspect='equal')
+        self.ax.set_xlim(0, self.upper_bound_x)
+        self.ax.set_ylim(0, self.upper_bound_y)
+        self.ax.axis('off')
+        # black background
+        self.ax.add_artist(Ellipse(xy=[0.0,0.0],width=1400,height=1400,clip_box=self.ax.bbox,alpha=1.0, color=[0,0,0]))
+        self.ells = [
+            Ellipse(
+                xy=part.xy,
+                width=self.part_size, 
+                height=self.part_size,
+                clip_box=self.ax.bbox,
+                alpha=1.0
+            )
+            for part in self.parts]
+        for ell in self.ells:
+            self.ax.add_artist(ell)
 
     def init_parts(self, start_count):
         for i in range(start_count):
             self.parts.append(
                 Particle(
                     np.array([
-                        (i%self.init_part_dim+1)*1.4*self.part_size, #rnd.random()*self.upper_bound_x, 
-                        (i//self.init_part_dim+1)*1.4*self.part_size #rnd.random()*self.upper_bound_y
+                        (i%self.init_part_dim+1)*self.part_spacing*self.part_size,  
+                        (i//self.init_part_dim+1)*self.part_spacing*self.part_size
                     ]),
-                    np.array([0.2*rnd.random()-0.1, 0.2*rnd.random()-0.1])
+                    np.array([0.16*rnd.random()-0.08, 0.16*rnd.random()-0.08])
                 )
             )
         
@@ -59,33 +83,31 @@ class ParticleSystem:
         for part in self.parts:
             part.update()
             # walls
-            xw = min(self.lower_bound_x+part.xy[0]-self.part_size, 0.0)
+            xw = min(self.lower_bound_x+part.xy[0]-self.part_size*0.5, 0.0)
             part.vel[0] -= self.repel_strength*xw
-            xw = min(self.upper_bound_x-part.xy[0]-self.part_size, 0.0)
+            xw = min(self.upper_bound_x-part.xy[0]-self.part_size*0.5, 0.0)
             part.vel[0] += self.repel_strength*xw
             
-            yw = min(self.lower_bound_y+part.xy[1]-self.part_size, 0.0)
+            yw = min(self.lower_bound_y+part.xy[1]-self.part_size*0.5, 0.0)
             part.vel[1] -= self.repel_strength*yw
-            yw = min(self.upper_bound_y-part.xy[1]-self.part_size, 0.0)
+            yw = min(self.upper_bound_y-part.xy[1]-self.part_size*0.5, 0.0)
             part.vel[1] += self.repel_strength*yw
             
         self.sim_step += 1
-            
-    @staticmethod
-    def get_img_from_fig(fig, dpi=180):
+    
+    def get_img_from_fig(self):
         '''
         graphics in python is really a sad state of affiars :'(
         from https://stackoverflow.com/a/58641662
         define a function which returns an image as numpy array from figure
         '''
         buf = io.BytesIO()
-        fig.savefig(buf, format="png", dpi=dpi)
+        self.fig.savefig(buf, format="png", dpi=self.DPI)
         buf.seek(0)
         img_arr = np.frombuffer(buf.getvalue(), dtype=np.uint8)
         buf.close()
         img = cv2.imdecode(img_arr, 1)
         img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
-
         return img
     
     @staticmethod
@@ -96,40 +118,20 @@ class ParticleSystem:
         rgb = np.clip( np.abs(np.mod(c[0]*6.0+np.array([0.0,4.0,2.0]),6.0)-3.0)-1.0, 0.0, 1.0 )
         wht = np.array([1.0,1.0,1.0])
         return c[2] * (c[1]*rgb + (1.0-c[1])*wht)
-        
+    
     def draw(self):
-        plt.close('all')
-        ells = [(Ellipse(xy=[0.0,0.0],width=400,height=400), [0.0,0.0,0.0])]+[
-            (Ellipse(
-                xy=part.xy, 
-                width=self.part_size, 
-                height=self.part_size
-            ),
-            np.clip(
+
+        for e, part in zip(self.ells, self.parts):
+            col = np.clip(
                 ParticleSystem.hsv2rgb([
                     math.atan2(part.vel[0],part.vel[1])/math.tau, 
                     3.0*np.sqrt(part.vel.dot(part.vel)),
                     0.9
                 ]),
                 0.0, 1.0)
-            )
-            for part in self.parts]
-
-        fig = plt.figure(0)
-
-        DPI = fig.get_dpi()
-        fig.set_size_inches(self.upper_bound_x/float(DPI),self.upper_bound_y/float(DPI))
-
-        ax = fig.add_subplot(111, aspect='equal')
-        for e,col in ells:
-            ax.add_artist(e)
-            e.set_clip_box(ax.bbox)
-            e.set_alpha(1.0)
             e.set_facecolor(col)
+            e.set_center(part.xy)
 
-        ax.set_xlim(0, self.upper_bound_x)
-        ax.set_ylim(0, self.upper_bound_y)
-        ax.axis('off')
         #plt.savefig(f'part_test/t{self.draw_step:06d}.png')
         self.draw_step += 1
-        return ParticleSystem.get_img_from_fig(fig, DPI)/255.0
+        return self.get_img_from_fig()/255.0
