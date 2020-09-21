@@ -39,5 +39,10 @@ The next experiment is trying to capture the movement of information through the
   
 ### Principal components of hidden channels:
 ![matmul_pca](https://i.imgur.com/o9U0IWY.gif)  
-  
+
+### Particle Sim
+
+First Demo: http://transdimensional.xyz/projects/neural_ca/index.html  
+   
+     
 To be continued...
