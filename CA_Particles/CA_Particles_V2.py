@@ -212,6 +212,6 @@ if __name__ == '__main__':
         ca_sim.load_pretrained(f'checkpoints/{args.pretrained_path}.pt')
         ca_sim.run_pretrained(50000)
     else:
-        ca_sim.load_pretrained(f'checkpoints/ca_model_short_d.pt')
+        #ca_sim.load_pretrained(f'checkpoints/ca_model_short_d.pt')
         ca_sim.train_ca()
         
