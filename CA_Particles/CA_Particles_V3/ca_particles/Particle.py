@@ -3,11 +3,11 @@ import math
 
 class Particle:
     
-    def __init__(self, xy_pos, xy_vel, part_diameter):
+    def __init__(self, xy_pos, xy_vel, particle_diameter):
         self.position = xy_pos
         self.velocity = xy_vel
-        self.diameter = part_diameter
-        self.radius = 0.5*part_diameter
+        self.diameter = particle_diameter
+        self.radius = 0.5*particle_diameter
         self.mass = 0.5*math.pi*self.radius**2
         self.damp = 1.0
     
@@ -23,7 +23,7 @@ class Particle:
         self.velocity[1] += time_step*w_force*walls.upper_y_overlap(self)
         
     @staticmethod
-    def pair_force(a, b, force_strength, part_size, time_step):
+    def pair_force(a, b, force_strength, time_step):
         delta_p = a.position - b.position
         dist = np.sqrt(dv.dot(dv))
         if (dist != 0 and self.mass != 0):

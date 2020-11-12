@@ -1,4 +1,4 @@
-from abc import ABC, absractmethod
+from abc import ABC, abstractmethod
 
 class Simulation(ABC):
     

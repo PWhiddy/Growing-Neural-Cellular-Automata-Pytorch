@@ -1,6 +1,4 @@
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.tensorboard import SummaryWriter
 import matplotlib.pyplot as plt
@@ -35,18 +33,6 @@ def show_tensor_surfaces(t):
 def state_loss(running_state, final_state):
     return F.mse_loss(running_state[:,0:3,:,:], final_state[:,0:3,:,:])
 
-class CAModel(nn.Module):
-    
-    def __init__(self, env_d):
-        super(CAModel, self).__init__()
-        self.conv1 = nn.Conv2d(env_d*3,96,1)
-        self.conv2 = nn.Conv2d(96,env_d,1)
-        nn.init.zeros_(self.conv2.weight)
-        nn.init.zeros_(self.conv2.bias)
-        
-    def forward(self, x):
-        x = F.relu(self.conv1(x))
-        return self.conv2(x)
     
 class CASimulator():
     
