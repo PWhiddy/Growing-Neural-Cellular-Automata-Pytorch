@@ -1,15 +1,20 @@
+import numpy as np
 from pathlib import Path
-import matplotlib.pyplot as plt
+from PIL import Image
+from tqdm import tqdm
 
 from ca_particles import ParticleSystem
 
-def run_sim(sim, pth, name, steps=100):
+def run_sim(sim, pth, name, steps=100, sim_steps_per_draw=1):
     Path(pth).mkdir(exist_ok=True)
-    for i in range(steps):
+    for i in tqdm(range(steps)):
         rendered_state = sim.draw()
-        plt.imshow(rendered_state.transpose(1,2,0))
-        plt.savefig(f'{pth}/{name}_step_{i:06d}.png')
-        sim.sim_step()
+        im = Image.fromarray(
+            (rendered_state.detach()*255).permute(1,2,0).cpu().numpy().astype(np.uint8)
+        )
+        im.save(f'{pth}/{name}_step_{i:06d}.png')
+        for _ in range(sim_steps_per_draw):
+            sim.sim_step(0.1)
 
 if __name__ == '__main__':
-    test_sim(ParticleSystem(), 'sim_output', 'particles', steps=1000)
+    run_sim(ParticleSystem(particle_count=6, env_size=32), 'sim_output', 'particles', steps=1000, sim_steps_per_draw=10)

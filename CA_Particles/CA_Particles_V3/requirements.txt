@@ -5,3 +5,4 @@ numpy
 scikit-image
 tensorboard
 tensor-canvas
+Pillow

@@ -21,13 +21,16 @@ class Particle:
         self.velocity[0] += time_step*w_force*walls.upper_x_overlap(self)
         self.velocity[1] -= time_step*w_force*walls.lower_y_overlap(self)
         self.velocity[1] += time_step*w_force*walls.upper_y_overlap(self)
+    
+    def __str__(self):
+        return f'pos: ({self.position[0]}, {self.position[1]}) vel: ({self.velocity[0]}, {self.velocity[1]}) diameter: {self.diameter}' 
         
     @staticmethod
     def pair_force(a, b, force_strength, time_step):
         delta_p = a.position - b.position
-        dist = np.sqrt(dv.dot(dv))
-        if (dist != 0 and self.mass != 0):
+        dist = np.sqrt(delta_p.dot(delta_p))
+        if (dist != 0 and a.mass != 0 and b.mass != 0):
             # spring-like linear force with k=force_strength, l=part_size, m=1
-            frc = (dv/dist)*force_strength*max(a.radius+b.radius-dist,0.0)
-            a.velocity += time_step*frc/mass
-            b.velocity -= time_step*frc/mass
+            frc = (delta_p/dist)*force_strength*max(a.radius+b.radius-dist,0.0)
+            a.velocity += time_step*frc/a.mass
+            b.velocity -= time_step*frc/b.mass
