@@ -4,15 +4,17 @@ import itertools
 import math
 import tensorcanvas as tc
 import torch
+import torch.nn.functional as F
 
 from ca_particles import Simulation, Particle, Walls
 
 class ParticleSystem(Simulation):
     
-    def __init__(self, particle_count=6, force_strength=0.3, 
-                 particle_diameter=4.0, p_spacing=1.5, init_row_size=3, env_size=64):
+    def __init__(self, particle_count=9, force_strength=0.3, particle_diameter=3.0, 
+                 p_rand_size=2.5, p_spacing=2.0, init_row_size=3, env_size=32, draw_device=torch.device('cpu')):
         self.particles = []
         self.particle_diameter = particle_diameter
+        self.p_rand_size = p_rand_size
         self.force_strength = force_strength
         self.env_size = env_size
         self.walls = Walls(0, env_size, 0, env_size)
@@ -20,6 +22,7 @@ class ParticleSystem(Simulation):
         self.draw_step = 0
         self.init_row_size = init_row_size
         self.part_spacing = p_spacing
+        self.draw_device = draw_device
         self.init_parts(particle_count)
 
     def init_parts(self, particle_count):
@@ -30,8 +33,8 @@ class ParticleSystem(Simulation):
                         (i%self.init_row_size+1)*self.part_spacing*self.particle_diameter,  
                         (i//self.init_row_size+1)*self.part_spacing*self.particle_diameter
                     ]),
-                    np.array([0.2*rnd.random()-0.1, 0.2*rnd.random()-0.1]),
-                    self.particle_diameter
+                    np.array([0.16*rnd.random()-0.08, 0.16*rnd.random()-0.08]),
+                    self.particle_diameter+self.p_rand_size*rnd.random()
                 )
             )
 
@@ -53,7 +56,7 @@ class ParticleSystem(Simulation):
         return c[2] * (c[1]*rgb + (1.0-c[1])*wht)
 
     def draw(self):
-        canvas = torch.zeros(3, self.env_size, self.env_size)
+        canvas = torch.zeros(3, self.env_size, self.env_size, device=self.draw_device)
         for particle in self.particles:
             col = np.clip(
                 ParticleSystem.hsv2rgb([
@@ -62,8 +65,10 @@ class ParticleSystem(Simulation):
                     0.9
                 ]),
                 0.0, 1.0)
-            canvas = tc.draw_circle(*(particle.position-0.5), particle.radius, torch.tensor(col), canvas)
-
-        #plt.savefig(f'part_test/t{self.draw_step:06d}.png')
+            canvas = tc.draw_circle(*(particle.position-0.5), particle.radius, torch.tensor(col, device=self.draw_device), canvas)
+        # add white border for walls
+        wall_pad = 2
+        canv_with_walls = torch.ones(3, canvas.shape[1]+wall_pad*2, canvas.shape[2]+wall_pad*2, device=self.draw_device)
+        canv_with_walls[:, wall_pad:-wall_pad, wall_pad:-wall_pad] = canvas
         self.draw_step += 1
-        return canvas
+        return canv_with_walls

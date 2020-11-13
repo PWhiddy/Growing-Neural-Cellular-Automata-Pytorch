@@ -17,4 +17,4 @@ def run_sim(sim, pth, name, steps=100, sim_steps_per_draw=1):
             sim.sim_step(0.1)
 
 if __name__ == '__main__':
-    run_sim(ParticleSystem(particle_count=6, env_size=32), 'sim_output', 'particles', steps=1000, sim_steps_per_draw=10)
+    run_sim(ParticleSystem(), 'sim_output', 'particles', steps=1000, sim_steps_per_draw=10)
