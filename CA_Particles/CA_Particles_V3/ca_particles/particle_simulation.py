@@ -8,24 +8,24 @@ import torch.nn.functional as F
 
 from ca_particles import Simulation, Particle, Walls
 
-class ParticleSystem(Simulation):
+class ParticleSimulation(Simulation):
     
     def __init__(self, particle_count=9, force_strength=0.3, particle_diameter=3.0, 
                  p_rand_size=2.5, p_spacing=2.0, init_row_size=3, env_size=32, draw_device=torch.device('cpu')):
-        self.particles = []
         self.particle_diameter = particle_diameter
         self.p_rand_size = p_rand_size
         self.force_strength = force_strength
         self.env_size = env_size
         self.walls = Walls(0, env_size, 0, env_size)
-        self.step_count = 0
-        self.draw_step = 0
         self.init_row_size = init_row_size
         self.part_spacing = p_spacing
         self.draw_device = draw_device
-        self.init_parts(particle_count)
+        self.reset(particle_count)
 
-    def init_parts(self, particle_count):
+    def reset(self, particle_count):
+        self.step_count = 0
+        self.draw_count = 0
+        self.particles = []
         for i in range(particle_count):
             self.particles.append(
                 Particle(
@@ -70,5 +70,5 @@ class ParticleSystem(Simulation):
         wall_pad = 2
         canv_with_walls = torch.ones(3, canvas.shape[1]+wall_pad*2, canvas.shape[2]+wall_pad*2, device=self.draw_device)
         canv_with_walls[:, wall_pad:-wall_pad, wall_pad:-wall_pad] = canvas
-        self.draw_step += 1
+        self.draw_count += 1
         return canv_with_walls
