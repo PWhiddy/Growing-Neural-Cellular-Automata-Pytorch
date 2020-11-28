@@ -6,3 +6,4 @@ scikit-image
 tensorboard
 tensor-canvas
 Pillow
+tqdm
