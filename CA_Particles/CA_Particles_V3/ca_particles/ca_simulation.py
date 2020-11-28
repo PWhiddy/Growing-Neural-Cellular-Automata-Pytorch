@@ -1,7 +1,7 @@
 import torch
 from ca_particles import Simulation
 
-class CASystem(Simulation):
+class CASimulation(Simulation):
     
     def __init__(self, ca_model, device, batch_size, env_size=32, env_depth=16, update_prob=0.5):
         self.model = ca_model

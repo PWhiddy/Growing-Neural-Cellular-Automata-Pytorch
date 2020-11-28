@@ -3,7 +3,7 @@ from pathlib import Path
 from PIL import Image
 from tqdm import tqdm
 
-from ca_particles import ParticleSystem
+from ca_particles import ParticleSimulation
 
 def run_sim(sim, pth, name, steps=100, sim_steps_per_draw=1):
     Path(pth).mkdir(exist_ok=True)
@@ -17,4 +17,4 @@ def run_sim(sim, pth, name, steps=100, sim_steps_per_draw=1):
             sim.sim_step(0.1)
 
 if __name__ == '__main__':
-    run_sim(ParticleSystem(), 'sim_output', 'particles', steps=1000, sim_steps_per_draw=10)
+    run_sim(ParticleSimulation(), 'sim_output', 'particles', steps=1000, sim_steps_per_draw=10)

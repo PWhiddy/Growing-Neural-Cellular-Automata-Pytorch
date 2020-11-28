@@ -59,7 +59,7 @@ class ParticleSimulation(Simulation):
         canvas = torch.zeros(3, self.env_size, self.env_size, device=self.draw_device)
         for particle in self.particles:
             col = np.clip(
-                ParticleSystem.hsv2rgb([
+                ParticleSimulation.hsv2rgb([
                     math.atan2(*particle.velocity)/math.tau, 
                     3.0*np.sqrt(particle.velocity.dot(particle.velocity)),
                     0.9
