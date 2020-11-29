@@ -9,6 +9,7 @@ def run_sim(sim, pth, name, steps=100, sim_steps_per_draw=1):
     Path(pth).mkdir(exist_ok=True)
     for i in tqdm(range(steps)):
         rendered_state = sim.draw()
+        rendered_state = rendered_state[0]
         im = Image.fromarray(
             (rendered_state.detach()*255).permute(1,2,0).cpu().numpy().astype(np.uint8)
         )
