@@ -52,10 +52,11 @@ class CATrainer:
                     self.ml_model.sim_step(self.time_step)
                     if o_i%self.save_evolution_interval == 0:
                         self.save_img(self.ml_model.draw()[0], 'evolution_output', 'evo', evolution_count)
+                        self.save_img(self.gt_model.draw()[0], 'evolution_output_gt', 'evo', evolution_count)
                         evolution_count += 1
                 
-                gt_state = self.gt_model.draw()
-                ml_state = self.ml_model.draw()
+            gt_state = self.gt_model.draw()
+            ml_state = self.ml_model.draw()
             
             loss = F.mse_loss(ml_state, gt_state)
             
@@ -73,7 +74,7 @@ class CATrainer:
                 
     def save_img(self, t, pth, fname, i):
         Path(pth).mkdir(exist_ok=True)
-        im = Image.fromarray((t.detach()*255).permute(1,2,0).cpu().numpy().astype(np.uint8))
+        im = Image.fromarray((torch.clamp(t.detach(),0.0,1.0)*255).permute(1,2,0).cpu().numpy().astype(np.uint8))
         im.save(f'{pth}/{fname}_step_{i:06d}.png')
     
     def save_model(self, fname):
