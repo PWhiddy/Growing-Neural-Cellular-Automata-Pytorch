@@ -4,7 +4,6 @@ import itertools
 import math
 import tensorcanvas as tc
 import torch
-import torch.nn.functional as F
 
 from ca_particles import Simulation, Particle, Walls
 
@@ -13,14 +12,14 @@ class ParticleSimulation(Simulation):
     Batched 2D particle system
     '''
     
-    def __init__(self, particle_count=9, sim_count=1, force_strength=0.3, seed=117, particle_diameter=3.0, 
+    def __init__(self, particle_count=9, sim_count=1, force_strength=0.3, seed=117, particle_diameter=3.0, wall_pad=2,
                  p_rand_size=2.5, p_spacing=2.0, init_row_size=3, env_size=32, draw_device=torch.device('cpu')):
         self.particle_diameter = particle_diameter
         self.p_rand_size = p_rand_size
         self.force_strength = force_strength
         self.env_size = env_size
         self.walls = Walls(0, env_size, 0, env_size)
-        self.wall_pad = 2
+        self.wall_pad = wall_pad
         self.init_row_size = init_row_size
         self.part_spacing = p_spacing
         self.draw_device = draw_device
@@ -52,7 +51,7 @@ class ParticleSimulation(Simulation):
                 particle.apply_walls(self.walls, self.force_strength, time_step)
                 particle.update(time_step)
         self.step_count += 1
-
+        
     @staticmethod
     def hsv2rgb(c):
         '''

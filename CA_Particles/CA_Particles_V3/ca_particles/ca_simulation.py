@@ -1,4 +1,6 @@
 import torch
+import torch.nn.functional as F
+
 from ca_particles import Simulation
 
 class CASimulation(Simulation):
@@ -8,12 +10,14 @@ class CASimulation(Simulation):
         self.env_size = env_size
         self.env_depth = env_depth
         self.device = device
-        self.batch_size
+        self.batch_size = batch_size
         self.update_probability = update_prob
         self.reset()
         
     def reset(self):
-        self.states = torch.zeros(self.batch_size, env_depth, env_size, env_size)
+        self.states = torch.zeros(
+            self.batch_size, self.env_depth, self.env_size, self.env_size,
+            device=self.device)
         
     def wrap_edges(self, x):
         return F.pad(x, (1,1,1,1), 'circular', 0)

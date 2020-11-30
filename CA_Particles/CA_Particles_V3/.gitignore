@@ -1,3 +1,5 @@
 sim_output
+final_state_output
+evolution_output
 *.mp4
 *.profile
