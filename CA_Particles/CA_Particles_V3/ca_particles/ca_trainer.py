@@ -8,8 +8,10 @@ import random
 
 class CATrainer:
     
-    def __init__(self, learned_model, ground_truth_model, max_sim_step_blocks_per_run=4,
-                 block_increase_interval=128, lr=2e-3, checkpoint_interval=1024, checkpoint_path='checkpoints', 
+    def __init__(self, learned_model, ground_truth_model, 
+                 max_sim_step_blocks_per_run=4, seed=115,
+                 block_increase_interval=128, lr=2e-3, 
+                 checkpoint_interval=1024, checkpoint_path='checkpoints', 
                  sim_steps_per_draw=8, gt_reset_interval=512, time_step=0.1,
                  save_final_state_interval=4, save_evolution_interval=256):
         self.gt_model = ground_truth_model
@@ -24,7 +26,7 @@ class CATrainer:
         self.save_final_state_interval = save_final_state_interval
         self.save_evolution_interval = save_evolution_interval
         self.lr = lr
-        random.seed(117)
+        random.seed(seed)
         
     def train_standard(self, optim_steps):
         final_state_count = 0
@@ -43,7 +45,9 @@ class CATrainer:
             self.ml_model.reset()
             self.ml_model.states[:, 0:3, :, :] = self.gt_model.draw()
             
-            c_blocks = random.randint(1, min(1+o_i//self.block_increase_interval, self.max_sim_step_blocks_per_run))
+            c_blocks = random.randint(
+                1, min(1+o_i//self.block_increase_interval, self.max_sim_step_blocks_per_run)
+            )
             
             for s_i in range(c_blocks):
             
@@ -51,8 +55,10 @@ class CATrainer:
                     self.gt_model.sim_step(self.time_step)
                     self.ml_model.sim_step(self.time_step)
                     if o_i%self.save_evolution_interval == 0:
-                        self.save_img(self.ml_model.draw()[0], 'evolution_output', 'evo', evolution_count)
-                        self.save_img(self.gt_model.draw()[0], 'evolution_output_gt', 'evo', evolution_count)
+                        self.save_img(self.ml_model.draw()[0], 
+                                      'evolution_output', 'evo', evolution_count)
+                        self.save_img(self.gt_model.draw()[0], 
+                                      'evolution_output_gt', 'evo', evolution_count)
                         evolution_count += 1
                 
             gt_state = self.gt_model.draw()
@@ -67,18 +73,19 @@ class CATrainer:
             loss.backward()
             optimizer.step()
             c_loss = loss.item()
-            running_loss = 0.95*running_loss + 0.05*c_loss
+            running_loss = 0.97*running_loss + 0.03*c_loss
             print(f'run {o_i}: recent loss: {running_loss:.7f}, current: {c_loss:.7f}')
             if o_i%self.checkpoint_interval == 0:
                 self.save_model(f'ca_model_step_{o_i:06d}')
                 
     def save_img(self, t, pth, fname, i):
         Path(pth).mkdir(exist_ok=True)
-        im = Image.fromarray((torch.clamp(t.detach(),0.0,1.0)*255).permute(1,2,0).cpu().numpy().astype(np.uint8))
+        normed = (torch.clamp(t.detach(),0.0,1.0)*255)
+        im = Image.fromarray(normed.permute(1,2,0).cpu().numpy().astype(np.uint8))
         im.save(f'{pth}/{fname}_step_{i:06d}.png')
     
     def save_model(self, fname):
         Path(self.checkpoint_path).mkdir(exist_ok=True)
-        torch.save(self.ml_model.model.state_dict(), f'{self.checkpoint_path}/{fname}.pt')
+        torch.save(self.ml_model.model, f'{self.checkpoint_path}/{fname}.pt')
         
         
