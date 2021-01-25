@@ -1,9 +1,11 @@
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
+from tqdm import tqdm
 from pathlib import Path
 from PIL import Image
 import numpy as np
+from datetime import datetime
 import random
 
 class CATrainer:
@@ -25,6 +27,7 @@ class CATrainer:
         self.checkpoint_path = checkpoint_path
         self.save_final_state_interval = save_final_state_interval
         self.save_evolution_interval = save_evolution_interval
+        self.run_name = "output/{:%Y_%m_%d_%H_%M_%S}".format(datetime.now())
         self.lr = lr
         random.seed(seed)
         
@@ -33,7 +36,7 @@ class CATrainer:
         evolution_count = 0
         running_loss = 0
         optimizer = optim.Adam(self.ml_model.model.parameters(), lr=self.lr)
-        for o_i in range(1, optim_steps):
+        for o_i in tqdm(range(1, optim_steps)):
             
             if o_i%self.gt_reset_interval == 0:
                 self.gt_model.reset()
@@ -48,7 +51,7 @@ class CATrainer:
             c_blocks = random.randint(
                 1, min(1+o_i//self.block_increase_interval, self.max_sim_step_blocks_per_run)
             )
-            
+                        
             for s_i in range(c_blocks):
             
                 for sub_i in range(self.sim_steps_per_draw):
@@ -74,18 +77,21 @@ class CATrainer:
             optimizer.step()
             c_loss = loss.item()
             running_loss = 0.97*running_loss + 0.03*c_loss
-            print(f'run {o_i}: recent loss: {running_loss:.7f}, current: {c_loss:.7f}')
+            if (o_i % 100 == 0):
+                tqdm.write(f'run {o_i}: recent loss: {running_loss:.7f}, current: {c_loss:.7f}')
             if o_i%self.checkpoint_interval == 0:
                 self.save_model(f'ca_model_step_{o_i:06d}')
                 
     def save_img(self, t, pth, fname, i):
-        Path(pth).mkdir(exist_ok=True)
+        pth = self.run_name + '/' + pth
+        Path(pth).mkdir(exist_ok=True, parents=True)
         normed = (torch.clamp(t.detach(),0.0,1.0)*255)
         im = Image.fromarray(normed.permute(1,2,0).cpu().numpy().astype(np.uint8))
         im.save(f'{pth}/{fname}_step_{i:06d}.png')
     
     def save_model(self, fname):
-        Path(self.checkpoint_path).mkdir(exist_ok=True)
-        torch.save(self.ml_model.model, f'{self.checkpoint_path}/{fname}.pt')
+        pth = self.run_name + '/' + self.checkpoint_path
+        Path(pth).mkdir(exist_ok=True, parents=True)
+        torch.save(self.ml_model.model, f'{pth}/{fname}.pt')
         
         
