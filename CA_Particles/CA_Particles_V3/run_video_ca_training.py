@@ -4,13 +4,14 @@ import numpy as np
 from ca_particles import VideoSimulation, CAModel, CASimulation, CATrainer
 
 if __name__ == '__main__':
-    cell_dim = 12
-    hidden_dim = 86
-    batch_size = 1 #16
-    train_steps = 4096*64
-    model_steps_per_video_frame = 8
+    cell_dim = 16
+    hidden_dim = 160
+    batch_size = 64
+    train_steps = 4096*16
+    model_steps_per_video_frame = 4
+    step_blocks = 16
     seed = 55
-    video_data_path = './p_sim_long_1.npy'
+    video_data_path = './p_sim_long_3_slow.npy'
     device = torch.device('cuda')
     pretrain_path = None
     if pretrain_path == None:
@@ -35,8 +36,8 @@ if __name__ == '__main__':
     )
 
     trainer = CATrainer(
-        ca_sim, video_sim, max_sim_step_blocks_per_run=1, block_increase_interval=1024,
-        save_evolution_interval=1024, time_step=1.0, 
+        ca_sim, video_sim, sim_step_blocks_per_run=step_blocks,
+        save_evolution_interval=1024, lr=2e-3, 
         save_final_state_interval=16, sim_steps_per_draw=model_steps_per_video_frame,
         seed=seed, gt_reset_interval=10000000, checkpoint_path=f'checkpoints_c{cell_dim}_h{hidden_dim}'
     )

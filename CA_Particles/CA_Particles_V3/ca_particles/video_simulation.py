@@ -31,6 +31,5 @@ class VideoSimulation(Simulation):
         self.sim_steps += 1
         
     def draw(self):
-        print(f'drawing from indices: {self.cur_indices}')
         return self.sim_data[self.cur_indices]
         

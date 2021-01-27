@@ -7,20 +7,19 @@ from PIL import Image
 import numpy as np
 from datetime import datetime
 import random
+import math
 
 class CATrainer:
     
     def __init__(self, learned_model, ground_truth_model, 
-                 max_sim_step_blocks_per_run=4, seed=115,
-                 block_increase_interval=128, lr=2e-3, 
+                 sim_step_blocks_per_run=4, seed=115, lr=2e-3, 
                  checkpoint_interval=1024, checkpoint_path='checkpoints', 
-                 sim_steps_per_draw=8, gt_reset_interval=512, time_step=0.1,
+                     sim_steps_per_draw=8, gt_reset_interval=512, time_step=1.0,
                  save_final_state_interval=4, save_evolution_interval=256):
         self.gt_model = ground_truth_model
         self.ml_model = learned_model
         self.gt_reset_interval = gt_reset_interval
-        self.max_sim_step_blocks_per_run = max_sim_step_blocks_per_run
-        self.block_increase_interval = block_increase_interval
+        self.sim_step_blocks_per_run = sim_step_blocks_per_run
         self.sim_steps_per_draw = sim_steps_per_draw
         self.time_step = time_step
         self.checkpoint_interval = checkpoint_interval
@@ -36,23 +35,23 @@ class CATrainer:
         evolution_count = 0
         running_loss = 0
         optimizer = optim.Adam(self.ml_model.model.parameters(), lr=self.lr)
+        r_losses = np.zeros(self.sim_step_blocks_per_run)
+        running_loss = 0
         for o_i in tqdm(range(1, optim_steps)):
             
             if o_i%self.gt_reset_interval == 0:
                 self.gt_model.reset()
             
             optimizer.zero_grad()
-            loss = torch.zeros(1, requires_grad=True, device=self.ml_model.device)
             
             # set initial state from ground truth model
             self.ml_model.reset()
             self.ml_model.states[:, 0:3, :, :] = self.gt_model.draw()
             
-            c_blocks = random.randint(
-                1, min(1+o_i//self.block_increase_interval, self.max_sim_step_blocks_per_run)
-            )
-                        
-            for s_i in range(c_blocks):
+            c_loss = 0
+            c_losses = []
+             
+            for s_i in range(self.sim_step_blocks_per_run):
             
                 for sub_i in range(self.sim_steps_per_draw):
                     self.gt_model.sim_step(self.time_step)
@@ -64,21 +63,30 @@ class CATrainer:
                                       'evolution_output_gt', 'evo', evolution_count)
                         evolution_count += 1
                 
-            gt_state = self.gt_model.draw()
-            ml_state = self.ml_model.draw()
-            
-            loss = F.mse_loss(ml_state, gt_state)
+                gt_state = self.gt_model.draw()
+                ml_state = self.ml_model.draw()
+
+                loss = F.mse_loss(ml_state, gt_state)
+                loss.backward(retain_graph=True)
+                c_loss += loss.item()
+                c_losses.append(loss.item())
+                
+            optimizer.step()
             
             if o_i%self.save_final_state_interval == 0:
                 self.save_img(ml_state[0], 'final_state_output', 'final_state', final_state_count)
                 final_state_count += 1
-                
-            loss.backward()
-            optimizer.step()
-            c_loss = loss.item()
-            running_loss = 0.97*running_loss + 0.03*c_loss
+            
+            
+            if o_i == 0:
+                r_losses += np.array(c_losses)
+                running_loss = c_loss
+            else:
+                running_loss = 0.99*running_loss + 0.01*c_loss
+                r_losses = 0.99*r_losses + 0.01*np.array(c_losses)
+            assert math.isclose(r_losses.sum(), running_loss)
             if (o_i % 100 == 0):
-                tqdm.write(f'run {o_i}: recent loss: {running_loss:.7f}, current: {c_loss:.7f}')
+                tqdm.write(f'run {o_i}: recent loss: {running_loss:.7f}, {r_losses}')
             if o_i%self.checkpoint_interval == 0:
                 self.save_model(f'ca_model_step_{o_i:06d}')
                 

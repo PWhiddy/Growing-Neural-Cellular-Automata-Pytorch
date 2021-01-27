@@ -28,8 +28,8 @@ if __name__ == '__main__':
         seed=seed
     )
     trainer = CATrainer(
-        ca_sim, particle_sim, max_sim_step_blocks_per_run=8, 
-        save_evolution_interval=64, time_step=1.0,
+        ca_sim, particle_sim, sim_step_blocks_per_run=8, 
+        save_evolution_interval=64,
         seed=seed, gt_reset_interval=1024, checkpoint_path=f'checkpoints_c{cell_dim}_h{hidden_dim}'
     )
     trainer.train_standard(train_steps)

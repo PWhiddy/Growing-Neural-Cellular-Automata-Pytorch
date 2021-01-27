@@ -1,11 +1,12 @@
 import torch
 import os
+import sys
 
 from ca_particles import CAModel
 
 if __name__ == '__main__':
-    pretrain_path = 'checkpoints_512/ca_model_step_004096.pt' #'checkpoints/ca_model_step_015360.pt'
-    export_path = 'multisize-particles-512-a.json'
+    pretrain_path = sys.argv[1]
+    export_path = 'particles-vid-12-96-b.json'
     ca_model = torch.load(pretrain_path)
     # temporary compatibility patch
     #ca_model.env_d = 16
