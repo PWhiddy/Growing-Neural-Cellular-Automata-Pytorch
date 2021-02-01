@@ -7,7 +7,7 @@ if __name__ == '__main__':
     cell_dim = 16
     hidden_dim = 160
     batch_size = 24
-    train_steps = 4096*12
+    train_steps = 4096*9
     learning_rate = 2e-3
     lr_decay_rate = 1024*24
     model_steps_per_video_frame = 8
