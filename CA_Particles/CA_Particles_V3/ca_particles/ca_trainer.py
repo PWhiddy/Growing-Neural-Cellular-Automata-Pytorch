@@ -12,9 +12,9 @@ import math
 class CATrainer:
     
     def __init__(self, learned_model, ground_truth_model, 
-                 sim_step_blocks_per_run=4, seed=115, lr=2e-3, 
+                 sim_step_blocks_per_run=4, seed=115, lr=2e-3, lr_decay=1024*1024,
                  checkpoint_interval=1024, checkpoint_path='checkpoints', 
-                     sim_steps_per_draw=8, gt_reset_interval=512, time_step=1.0,
+                 sim_steps_per_draw=8, gt_reset_interval=512, time_step=1.0,
                  save_final_state_interval=4, save_evolution_interval=256):
         self.gt_model = ground_truth_model
         self.ml_model = learned_model
@@ -28,6 +28,7 @@ class CATrainer:
         self.save_evolution_interval = save_evolution_interval
         self.run_name = "output/{:%Y_%m_%d_%H_%M_%S}".format(datetime.now())
         self.lr = lr
+        self.lr_decay = lr_decay
         random.seed(seed)
         
     def train_standard(self, optim_steps):
@@ -42,6 +43,9 @@ class CATrainer:
             if o_i%self.gt_reset_interval == 0:
                 self.gt_model.reset()
             
+            new_lrate = self.lr * (0.25 ** (o_i / self.lr_decay))
+            for param_group in optimizer.param_groups:
+                param_group['lr'] = new_lrate
             optimizer.zero_grad()
             
             # set initial state from ground truth model
@@ -85,8 +89,8 @@ class CATrainer:
                 running_loss = 0.99*running_loss + 0.01*c_loss
                 r_losses = 0.99*r_losses + 0.01*np.array(c_losses)
             assert math.isclose(r_losses.sum(), running_loss)
-            if (o_i % 100 == 0):
-                tqdm.write(f'run {o_i}: recent loss: {running_loss:.7f}, {r_losses}')
+            if (o_i % 50 == 0):
+                tqdm.write(f'run {o_i}, recent loss: {running_loss:.7f}, lr: {new_lrate:.5f} \nblock losses: {r_losses}')
             if o_i%self.checkpoint_interval == 0:
                 self.save_model(f'ca_model_step_{o_i:06d}')
                 
