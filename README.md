@@ -1,8 +1,10 @@
 # Growing Neural Cellular Automata - Task Experiments  
 
-Based on the original work [Growing Neural Cellular Automata](https://distill.pub/2020/growing-ca/) by Alexander Mordvintsev et al.  
+Based on the original work [Growing Neural Cellular Automata](https://distill.pub/2020/growing-ca/) by Alexander Mordvintsev et al. 
   
 The writing on this page is adapted from posts and discussion in the distill community slack group.  
+
+The [particle simulation](http://transdimensional.xyz/projects/neural_ca/index.html) code is [available as a google colab](https://colab.research.google.com/drive/1XaNCLrVyp5JYXgP_glWExSUyhbV8OaWb?usp=sharing)
 
 ### Fun Pictures:
 A single network trained to converge to multiple target outputs specified by control channels:  
