@@ -4,7 +4,7 @@ Based on the original work [Growing Neural Cellular Automata](https://distill.pu
   
 The writing on this page is adapted from posts and discussion in the distill community slack group.  
 
-The [particle simulation](http://transdimensional.xyz/projects/neural_ca/index.html) code is [available as a google colab](https://colab.research.google.com/drive/1XaNCLrVyp5JYXgP_glWExSUyhbV8OaWb?usp=sharing)
+Thanks to @anishau, code to train the [particle simulation](http://transdimensional.xyz/projects/neural_ca/index.html) model is available as a [colab notebook](https://colab.research.google.com/drive/1XaNCLrVyp5JYXgP_glWExSUyhbV8OaWb?usp=sharing)
 
 ### Fun Pictures:
 A single network trained to converge to multiple target outputs specified by control channels:  
