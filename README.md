@@ -6,6 +6,7 @@ Based on the original work [Growing Neural Cellular Automata](https://distill.pu
 The writing on this page is adapted from posts and discussion in the distill community slack group.  
 
 Thanks to @anishau, code to train the [particle simulation](http://transdimensional.xyz/projects/neural_ca/index.html) model is available as a [colab notebook](https://colab.research.google.com/drive/1XaNCLrVyp5JYXgP_glWExSUyhbV8OaWb?usp=sharing)
+
 ![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)
 
 ### Fun Pictures:
