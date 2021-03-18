@@ -1,5 +1,7 @@
 # Growing Neural Cellular Automata - Task Experiments  
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)]
+
 Based on the original work [Growing Neural Cellular Automata](https://distill.pub/2020/growing-ca/) by Alexander Mordvintsev et al. 
   
 The writing on this page is adapted from posts and discussion in the distill community slack group.  
