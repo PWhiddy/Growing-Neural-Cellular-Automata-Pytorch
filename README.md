@@ -12,7 +12,7 @@ Thanks to @anishau, code to train the [particle simulation](http://transdimensio
 
 ### Fun Pictures:
 A single network trained to converge to multiple target outputs specified by control channels:  
-[source](basic_large.py)  
+[source](CA_Basic/basic_large.py)  
 ![growth](https://i.imgur.com/vjrqwF2.gif)
   
 ### Visualizing hidden states:    
