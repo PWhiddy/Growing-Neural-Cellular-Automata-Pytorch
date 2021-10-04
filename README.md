@@ -5,9 +5,13 @@ Based on the original work [Growing Neural Cellular Automata](https://distill.pu
   
 The writing on this page is adapted from posts and discussion in the distill community slack group.  
 
+
 Thanks to @anishau, code to train the [particle simulation](http://transdimensional.xyz/projects/neural_ca/index.html) model is available as a [colab notebook](https://colab.research.google.com/drive/1XaNCLrVyp5JYXgP_glWExSUyhbV8OaWb?usp=sharing)
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1XaNCLrVyp5JYXgP_glWExSUyhbV8OaWb?usp=sharing)  
+![parts2](https://i.imgur.com/Y6lggxE.gif)    
+
+
 
 
 ### Fun Pictures:
@@ -18,6 +22,11 @@ A single network trained to converge to multiple target outputs specified by con
 ### Visualizing hidden states:    
   
 ![hidden](https://i.imgur.com/2ApfNM3.gif)  
+
+
+### CA Particles:  
+![parts1](https://i.imgur.com/BD4vR9v.gif)  
+
 
 ## Computational Tasks  
 
