@@ -11,7 +11,8 @@ Thanks to @anishau, code to train the [particle simulation](http://transdimensio
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1XaNCLrVyp5JYXgP_glWExSUyhbV8OaWb?usp=sharing)  
 ![parts2](https://i.imgur.com/Y6lggxE.gif)    
 
-
+### Interactive Demo
+http://transdimensional.xyz/projects/neural_ca/index.html  
 
 
 ### Fun Pictures:
@@ -54,12 +55,5 @@ The next experiment is trying to capture the movement of information through the
   
 ### Principal components of hidden channels:
 ![matmul_pca](https://i.imgur.com/o9U0IWY.gif)  
-
-### Particle Sim
-
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/drive/1XaNCLrVyp5JYXgP_glWExSUyhbV8OaWb?usp=sharing) 
-
-First Demo: http://transdimensional.xyz/projects/neural_ca/index.html  
-   
      
 To be continued...
