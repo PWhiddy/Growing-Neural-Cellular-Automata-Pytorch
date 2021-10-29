@@ -1,9 +1,5 @@
 torch
-torchvision
 matplotlib
 numpy
 scikit-image
-tensorboard
-opencv-python
 PyQt5
-tensor-canvas
