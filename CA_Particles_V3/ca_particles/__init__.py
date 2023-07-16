@@ -5,4 +5,5 @@ from .particle_simulation import ParticleSimulation
 from .video_simulation import VideoSimulation
 from .ca_simulation import CASimulation
 from .ca_model import CAModel
+from .ca_model_transformer import CAModelTransformer
 from .ca_trainer import CATrainer
