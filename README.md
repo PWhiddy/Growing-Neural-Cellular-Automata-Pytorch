@@ -3,8 +3,12 @@
 
 Based on the original work [Growing Neural Cellular Automata](https://distill.pub/2020/growing-ca/) by Alexander Mordvintsev et al. 
   
-The writing on this page is adapted from posts and discussion in the distill community slack group.  
+The writing on this page is adapted from my posts and discussion in the distill community slack group.  
 
+### Update 2025  
+The matrix copying + multiplication experiments in this repo formed the basis for this paper!   
+[A Path to Universal Neural Cellular Automata](https://arxiv.org/abs/2505.13058)  
+https://arxiv.org/abs/2505.13058  
 
 Thanks to @anishau, code to train the [particle simulation](http://transdimensional.xyz/projects/neural_ca/index.html) model is available as a [colab notebook](https://colab.research.google.com/drive/1XaNCLrVyp5JYXgP_glWExSUyhbV8OaWb?usp=sharing)
 
